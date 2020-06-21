@@ -13,7 +13,7 @@ class KeyIO(object):
         self.upEventStack = {}
         self.running = False
 
-    def hookEvent(keyName, firedFunction, callOnDown = True):
+    def hookEvent(self, keyName, firedFunction, callOnDown = True):
         """
         adds a key to the stack
         function is called upon key press
@@ -32,10 +32,12 @@ class KeyIO(object):
         except:
             raise Exception("an error occured whilst hooking \"${}\", if this error persists please contact a developer".format(keyName))
 
-    def start():
+    def start(self):
         """
         starts for keys
         """
+        self.running = True
+
         def calledFunction(e, down):
             try:
                 if self.running:
@@ -52,6 +54,15 @@ class KeyIO(object):
                             raise ValueError("an error occured when firing a key ${} event, if this error persists please contact a developer".format(down))
             except:
                 raise Exception("an error occured, if this error persists please contact a developer")
+        
+        def calledDown(e):
+            calledFunction(e, True)
+        
+        def calledUp(e):
+            calledFunction(e, False)
 
-        keyboard.on_press(calledFunction)
-        keyboard.on_release(calledFunction)
+        keyboard.on_press(calledDown)
+        keyboard.on_release(calledUp)
+    
+    def stop(self):
+        self.running = False
