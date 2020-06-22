@@ -2,7 +2,10 @@
 Runs the game
 """
 
+from src import Game
+
 def main():
-    pass
+    gameInstance = Game.Game()
+    gameInstance.aliveThread()
 
 main()

@@ -2,18 +2,18 @@
 a class to handle keyboard events
 """
 
-from packages import keyboard
+import keyboard
 
 class KeyIO(object):
     """
     Hooks key events
     """
     def __init__(self):
-        self.downEventStack = {}
-        self.upEventStack = {}
+        self.eventStack = {}
+        self.stickStack = []
         self.running = False
 
-    def hookEvent(self, keyName, firedFunction, callOnDown = True):
+    def hookEvent(self, keyName, firedFunction, allowSpam = False):
         """
         adds a key to the stack
         function is called upon key press
@@ -23,12 +23,7 @@ class KeyIO(object):
         weither or not to call upon key down or key up, default to down (true)
         """
         try:
-            if callOnDown:
-                self.downEventStack[keyName] = firedFunction
-            elif not callOnDown:
-                self.upEventStack[keyName] = firedFunction
-            else:
-                raise ValueError("given argument \"callonDown\" was not valid, if this error persists please contact a developer")
+            self.eventStack[keyName] = firedFunction, allowSpam
         except:
             raise Exception("an error occured whilst hooking \"${}\", if this error persists please contact a developer".format(keyName))
 
@@ -38,31 +33,41 @@ class KeyIO(object):
         """
         self.running = True
 
-        def calledFunction(e, down):
+        def calledFunction(e):
             try:
                 if self.running:
-                    allowed = False
-                    if e.name in self.downEventStack.keys() and down: allowed = True
-                    if e.name in self.upEventStack.keys() and not down: allowed = True
 
-                    if allowed:
-                        if down:
-                            self.downEventStack[e.name](e)
-                        elif not down:
-                            self.upEventStack[e.name](e)
-                        else:
-                            raise ValueError("an error occured when firing a key ${} event, if this error persists please contact a developer".format(down))
+                    if keyboard.is_pressed(e.name):
+                        allowed = False
+
+                        if e.name in self.eventStack.keys():
+                            allowed = True
+
+                        if allowed:
+                            allowed = False
+
+                            foundEvent = self.eventStack[e.name]
+
+                            if foundEvent[1]:
+                                allowed = True
+                            elif not e.name in self.stickStack:
+                                allowed = True
+                                self.stickStack.append(e.name)
+                            else:
+                                allowed = False
+        
+                            if allowed:
+                                foundEvent[0](e)
+                    elif not keyboard.is_pressed(e.name):
+                        if e.name in self.stickStack:
+                            self.stickStack.remove(e.name)
+
+
             except:
                 raise Exception("an error occured, if this error persists please contact a developer")
-        
-        def calledDown(e):
-            calledFunction(e, True)
-        
-        def calledUp(e):
-            calledFunction(e, False)
 
-        keyboard.on_press(calledDown)
-        keyboard.on_release(calledUp)
+        keyboard.hook(calledFunction)
+
     
     def stop(self):
         self.running = False
