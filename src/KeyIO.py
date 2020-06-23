@@ -13,7 +13,7 @@ class KeyIO(object):
         self.stickStack = []
         self.running = False
 
-    def hookEvent(self, keyName, firedFunction, allowSpam = False):
+    def hookEvent(self, keyName, allowSpam = False):
         """
         adds a key to the stack
         function is called upon key press
@@ -22,10 +22,31 @@ class KeyIO(object):
         callOnDown = True
         weither or not to call upon key down or key up, default to down (true)
         """
+        def func_wrapper(func):
+            try:
+                self.eventStack[keyName] = func, allowSpam
+            except:
+                raise Exception("an error occured whilst hooking \"${}\", if this error persists please contact a developer".format(keyName))
+        return func_wrapper
+    
+    def unhookAll(self):
+        """unhooks all current keybinds"""
+        self.eventStack = {}
+        self.stickStack = []
+    
+    def unhook(self, keyName):
+        """
+        attempts to unhook a single keyname
+        """
+
         try:
-            self.eventStack[keyName] = firedFunction, allowSpam
+            if keyName in self.eventStack.keys():
+                self.eventStack[keyName] = None
+            
+            if keyName in self.stickStack.keys():
+                self.stickStack.remove(keyName)
         except:
-            raise Exception("an error occured whilst hooking \"${}\", if this error persists please contact a developer".format(keyName))
+            raise ValueError("given keyname is not in stack :(, if this error persists please contact a developer")
 
     def start(self):
         """
